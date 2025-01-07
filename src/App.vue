@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <template v-if="!isCustomerView">
+    <template v-if="$route.path === '/' || $route.path === '/about'">
+      <!-- <template v-if="!isCustomerView"> -->
       <nav class="acrylic-nav">
         <router-link to="/">Home</router-link>
         <router-link to="/about">About</router-link>
@@ -14,7 +15,6 @@
     </template>
   </div>
 </template>
-
 <script>
 export default {
   computed: {
@@ -24,7 +24,6 @@ export default {
   },
 };
 </script>
-
 <style>
 body {
   margin: 0;
