@@ -1,26 +1,40 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHistory } from "vue-router";
+import LoginView from "../views/LoginView.vue";
 import HomeView from "../views/HomeView.vue";
+import RegisterView from "../views/RegisterView.vue";
+import AboutView from "../views/AboutView.vue";
+import CustomerView from "../views/CustomerView.vue";
 
 const routes = [
+  { path: "/", name: "Login", component: LoginView },
   {
-    path: "/",
-    name: "home",
+    path: "/home",
+    name: "Home",
     component: HomeView,
+    meta: { requiresAuth: true },
   },
+  { path: "/register", name: "Register", component: RegisterView },
+  { path: "/about", name: "About", component: AboutView },
   {
-    path: "/about",
-    name: "about",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
+    path: "/CustomerView",
+    name: "Customer",
+    component: CustomerView,
+    meta: { requiresAuth: true },
   },
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes,
+});
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem("token");
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next("/");
+  } else {
+    next();
+  }
 });
 
 export default router;
