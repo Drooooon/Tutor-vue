@@ -26,6 +26,14 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 添加状态通知组件 -->
+    <TeacherStatusNotification
+      v-if="showStatusNotification"
+      :status="teacherStatus"
+      :name="userName"
+      @close="handleNotificationClose"
+    />
   </el-container>
 </template>
 
@@ -34,8 +42,12 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import axios from "../api/axios";
+import TeacherStatusNotification from "@/components/TeacherStatusNotification.vue";
 
 export default {
+  components: {
+    TeacherStatusNotification,
+  },
   name: "LoginView",
   setup() {
     const router = useRouter();
@@ -46,9 +58,23 @@ export default {
     const loading = ref(false);
     const loginFormRef = ref(null);
 
+    const showStatusNotification = ref(false);
+    const teacherStatus = ref("");
+    const userName = ref("");
+
     const rules = {
       id: [{ required: true, message: "请输入账号编号", trigger: "blur" }],
       password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+    };
+
+    const handleNotificationClose = () => {
+      showStatusNotification.value = false;
+      if (teacherStatus.value === "REJECTED") {
+        loginForm.value = {
+          id: "",
+          password: "",
+        };
+      }
     };
 
     const handleLogin = () => {
@@ -56,24 +82,60 @@ export default {
         if (valid) {
           loading.value = true;
           try {
-            const response = await axios.post(
+            const loginResponse = await axios.post(
               "/account/login",
               loginForm.value,
             );
+
             if (
-              response.data.code === 200 &&
-              response.data.message === "success"
+              loginResponse.data.code === 200 &&
+              loginResponse.data.message === "success"
             ) {
-              const { userType, id, name } = response.data.data;
-              localStorage.setItem("token", "some-token");
-              localStorage.setItem("userId", id);
-              localStorage.setItem("userName", name);
-              ElMessage.success(`欢迎回来，${name}！`);
+              const { userType, id, name } = loginResponse.data.data;
+              userName.value = name;
+
               if (userType === "customer") {
+                localStorage.setItem("token", "some-token");
+                localStorage.setItem("userId", id);
+                localStorage.setItem("userName", name);
+                ElMessage.success(`欢迎回来，${name}！`);
                 router.replace({ path: "/CustomerView", query: { id } });
               } else if (userType === "teacher") {
-                router.replace("/TeacherView");
+                try {
+                  const statusResponse = await axios.post(
+                    "/account/requestStatus",
+                    {
+                      id: loginForm.value.id,
+                    },
+                  );
+
+                  // 正确处理状态响应
+                  if (statusResponse.data.code === 200) {
+                    teacherStatus.value = statusResponse.data.data;
+
+                    if (
+                      statusResponse.data.data === "PENDING" ||
+                      statusResponse.data.data === "REJECTED"
+                    ) {
+                      showStatusNotification.value = true;
+                      return; // 阻止后续的存储和跳转操作
+                    }
+                  }
+
+                  // 只有在状态正常时才进行这些操作
+                  localStorage.setItem("token", "some-token");
+                  localStorage.setItem("userId", id);
+                  localStorage.setItem("userName", name);
+                  ElMessage.success(`欢迎回来，${name}！`);
+                  router.replace("/TeacherView");
+                } catch (error) {
+                  ElMessage.error("获取教师状态失败，请稍后重试");
+                }
               } else if (userType === "admin") {
+                localStorage.setItem("token", "some-token");
+                localStorage.setItem("userId", id);
+                localStorage.setItem("userName", name);
+                ElMessage.success(`欢迎回来，${name}！`);
                 router.replace("/AdminView");
               }
             } else {
@@ -101,12 +163,17 @@ export default {
       goToRegister,
       loading,
       loginFormRef,
+      showStatusNotification,
+      teacherStatus,
+      userName,
+      handleNotificationClose,
     };
   },
 };
 </script>
 
 <style scoped>
+/* 保持原有样式不变 */
 .login-container {
   display: flex;
   justify-content: center;
