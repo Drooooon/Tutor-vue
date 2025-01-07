@@ -1,4 +1,3 @@
-<!-- src/components/SuccessNotification.vue -->
 <template>
   <div :class="['success-notification', { 'show-notification': isVisible }]">
     <div class="notification-content">
@@ -17,7 +16,7 @@
 import { ref, onMounted } from "vue";
 
 export default {
-  name: "SuccessNotification",
+  name: "CustomerRegisterSuccessNotification",
   props: {
     id: {
       type: [String, Number],

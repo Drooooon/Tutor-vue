@@ -17,7 +17,7 @@
 import { ref, onMounted } from "vue";
 
 export default {
-  name: "SuccessNotification",
+  name: "TeacherRegisterSuccessNotification",
   props: {
     id: {
       type: [String, Number],
