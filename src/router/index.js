@@ -26,6 +26,8 @@ const routes = [
     path: "/TeacherView",
     name: "Teacher",
     component: TeacherView,
+    meta: { requiresAuth: true },
+
   },
 ];
 
