@@ -113,6 +113,7 @@ export default {
         if (valid) {
           loading.value = true;
           try {
+            console.log("axios配置的baseURL:", axios.defaults.baseURL);
             const response = await axios.post(
               "/account/add",
               registerForm.value,
