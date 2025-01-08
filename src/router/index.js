@@ -27,6 +27,7 @@ const routes = [
     name: "Teacher",
     component: TeacherView,
     meta: { requiresAuth: true },
+
   },
 ];
 
