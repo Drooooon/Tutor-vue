@@ -185,6 +185,7 @@ export default {
   data() {
     return {
       userName: "加载中...",
+      userId: "",
       activeIndex: "home",
       currentPage: "home",
       breadcrumb: ["主页"],
@@ -214,8 +215,9 @@ export default {
   },
   created() {
     const userName = localStorage.getItem("userName");
-    const userId = localStorage.getItem("userId"); 
+    const userId = localStorage.getItem("userId");
     this.userName = userName || "未知教师";
+    this.userId = userId;
     this.fetchSubjects();
     this.fetchExams();
     this.fetchStudents();
@@ -224,8 +226,9 @@ export default {
     // 获取科目列表
     async fetchSubjects() {
       try {
-        const response = await axios.get("/teacher/getAllSubject",
-        { id: userId },
+        const response = await axios.get(
+          "/teacher/getAllSubject",
+          { id: this.userId },
           {
             headers: {
               "Content-Type": "application/json",
