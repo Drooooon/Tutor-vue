@@ -4,6 +4,7 @@ import HomeView from "../views/HomeView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import AboutView from "../views/AboutView.vue";
 import CustomerView from "../views/CustomerView.vue";
+import TeacherView from "../views/TeacherView.vue";
 
 const routes = [
   { path: "/", name: "Login", component: LoginView },
@@ -19,6 +20,12 @@ const routes = [
     path: "/CustomerView",
     name: "Customer",
     component: CustomerView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/TeacherView",
+    name: "Teacher",
+    component: TeacherView,
     meta: { requiresAuth: true },
   },
 ];

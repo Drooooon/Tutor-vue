@@ -77,79 +77,82 @@ export default {
       }
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
       loginFormRef.value.validate(async (valid) => {
-        if (valid) {
-          loading.value = true;
-          try {
-            const loginResponse = await axios.post(
-              "/account/login",
-              loginForm.value,
-            );
-
-            if (
-              loginResponse.data.code === 200 &&
-              loginResponse.data.message === "success"
-            ) {
-              const { userType, id, name } = loginResponse.data.data;
-              userName.value = name;
-
-              if (userType === "customer") {
-                localStorage.setItem("token", "some-token");
-                localStorage.setItem("userId", id);
-                localStorage.setItem("userName", name);
-                ElMessage.success(`欢迎回来，${name}！`);
-                router.replace({ path: "/CustomerView", query: { id } });
-              } else if (userType === "teacher") {
-                try {
-                  const statusResponse = await axios.post(
-                    "/account/requestStatus",
-                    {
-                      id: loginForm.value.id,
-                    },
-                  );
-
-                  // 正确处理状态响应
-                  if (statusResponse.data.code === 200) {
-                    teacherStatus.value = statusResponse.data.data;
-
-                    if (
-                      statusResponse.data.data === "PENDING" ||
-                      statusResponse.data.data === "REJECTED"
-                    ) {
-                      showStatusNotification.value = true;
-                      return; // 阻止后续的存储和跳转操作
-                    }
-                  }
-
-                  // 只有在状态正常时才进行这些操作
-                  localStorage.setItem("token", "some-token");
-                  localStorage.setItem("userId", id);
-                  localStorage.setItem("userName", name);
-                  ElMessage.success(`欢迎回来，${name}！`);
-                  router.replace("/TeacherView");
-                } catch (error) {
-                  ElMessage.error("获取教师状态失败，请稍后重试");
-                }
-              } else if (userType === "admin") {
-                localStorage.setItem("token", "some-token");
-                localStorage.setItem("userId", id);
-                localStorage.setItem("userName", name);
-                ElMessage.success(`欢迎回来，${name}！`);
-                router.replace("/AdminView");
-              }
-            } else {
-              ElMessage.error("密码错误或账户不存在，请重试");
-            }
-          } catch (error) {
-            ElMessage.error("服务器错误，请稍后再试");
-          } finally {
-            loading.value = false;
-          }
-        } else {
+        if (!valid) {
           ElMessage.error("请完善表单信息");
+          return;
+        }
+
+        loading.value = true;
+
+        try {
+          // 发送登录请求
+          const loginResponse = await axios.post(
+            "/account/login",
+            loginForm.value,
+          );
+
+          if (
+            loginResponse.data.code !== 200 ||
+            loginResponse.data.message !== "success"
+          ) {
+            ElMessage.error("密码错误或账户不存在，请重试");
+            return;
+          }
+
+          const { userType, id, name } = loginResponse.data.data;
+          userName.value = name;
+
+          if (userType === "customer") {
+            handleLoginSuccess({ id, name, path: "/CustomerView" });
+          } else if (userType === "teacher") {
+            await handleTeacherLogin(id, name);
+          } else if (userType === "admin") {
+            handleLoginSuccess({ id, name, path: "/AdminView" });
+          }
+        } catch (error) {
+          ElMessage.error("服务器错误，请稍后再试");
+        } finally {
+          loading.value = false;
         }
       });
+    };
+
+    // 处理教师用户的登录逻辑
+    const handleTeacherLogin = async (id, name) => {
+      try {
+        const statusResponse = await axios.post("/account/requestStatus", {
+          id: loginForm.value.id,
+        });
+
+        if (statusResponse.data.code !== 200) {
+          ElMessage.error("获取教师状态失败，请稍后重试");
+          return;
+        }
+
+        const status = statusResponse.data.data;
+        teacherStatus.value = status;
+
+        if (status === "PENDING" || status === "REJECTED") {
+          showStatusNotification.value = true;
+        } else if (status === "APPROVED") {
+          handleLoginSuccess({ id, name, path: "/TeacherView" });
+        } else {
+          ElMessage.error("未知状态，请联系管理员");
+        }
+      } catch (error) {
+        ElMessage.error("获取教师状态失败，请稍后重试");
+      }
+    };
+
+    // 通用的登录成功处理逻辑
+    const handleLoginSuccess = ({ id, name, path }) => {
+      localStorage.setItem("token", "some-token");
+      localStorage.setItem("userId", id);
+      localStorage.setItem("userName", name);
+      ElMessage.success(`欢迎回来，${name}！`);
+      router.replace({ path, query: { id } });
     };
 
     const goToRegister = () => {

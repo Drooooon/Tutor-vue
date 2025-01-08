@@ -317,6 +317,7 @@
     </el-container>
   </el-container>
 </template>
+
 <script>
 import axios from "../api/axios";
 import AddStudentSuccessNotification from "@/components/AddStudentSuccessNotification.vue";
