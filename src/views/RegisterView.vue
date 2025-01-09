@@ -87,7 +87,6 @@ export default {
     const registeredId = ref("");
     const registeredName = ref("");
 
-    // 表单验证规则
     const rules = {
       userType: [
         { required: true, message: "请选择用户类型", trigger: "change" },
