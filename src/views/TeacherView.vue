@@ -86,6 +86,23 @@
         </div>
         <div v-if="currentPage === 'view-exams'">
           <h2 class="section-title">查看考试</h2>
+          <!-- 搜索表单 -->
+          <el-form inline>
+            <el-form-item label="产品：">
+              <el-input
+                style="width: 200px"
+                placeholder="请输入产品名称"
+                v-model="examName"
+              ></el-input>
+            </el-form-item>
+
+            <el-form-item>
+              <el-button type="primary" @click="fetchExams(userId)"
+                >搜索</el-button
+              >
+              <el-button @click="resetAndLoadFruitList">重置</el-button>
+            </el-form-item>
+          </el-form>
           <el-table :data="exams" style="width: 100%" class="exam-table">
             <el-table-column
               label="考试科目"
@@ -145,6 +162,18 @@
               </template>
             </el-table-column>
           </el-table>
+          <!-- 分页条 -->
+          <el-pagination
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :page-sizes="[3, 5, 10, 15]"
+            layout="jumper, total, sizes, prev, pager, next"
+            background
+            :total="total"
+            @size-change="onSizeChange"
+            @current-change="onCurrentChange"
+            style="margin-top: 20px; justify-content: flex-end"
+          />
         </div>
         <div v-if="currentPage === 'view-students'">
           <h2>查看学生</h2>
@@ -227,6 +256,7 @@
   </el-container>
 </template>
 <script>
+// import router from "@/router";
 import axios from "../api/axios"; // 引入 axios
 export default {
   name: "TeacherView",
@@ -234,6 +264,10 @@ export default {
     return {
       userName: "加载中...",
       userId: "",
+      //分页条数据模型
+      pageNum: 1, //当前页
+      total: 20, //总条数
+      pageSize: 3, //每页条数
       activeIndex: "home",
       currentPage: "home",
       breadcrumb: ["主页"],
@@ -241,6 +275,7 @@ export default {
       dialogVisible: false,
       drawerVisible: false,
       selectedExam: null,
+      examName: null,
       exams: [],
       students: [],
       subjects: [],
@@ -294,8 +329,8 @@ export default {
         );
         if (response.data.code === 200) {
           this.$message.success("创建考试成功！");
-          this.fetchExams();
-          this.currentPage = "view-exams";
+          this.fetchExams(this.userId);
+          //this.currentPage = "view-exams";
         } else {
           this.$message.error("创建考试失败");
         }
@@ -329,10 +364,23 @@ export default {
     // 获取考试列表
     async fetchExams(userId) {
       try {
-        const response = await axios.get("/teacher/getExams?userId=" + userId);
+        console.log(typeof userId);
+        let params = {
+          userId: userId,
+          pageNum: this.pageNum,
+          pageSize: this.pageSize,
+          examName: this.examName ? this.examName : null,
+        };
+        console.log("dangqian");
+        const response = await axios.get("/teacher/getExams", {
+          params: params,
+        });
         // console.log("答复" + response.data);
         if (response.data.code === 200) {
-          this.exams = response.data.data.map((dto) => ({
+          // console.log(response.data.data)
+          this.total = response.data.data.total;
+          console.log(this.total);
+          this.exams = response.data.data.items.map((dto) => ({
             examId: dto.examId,
             subject: dto.examName,
             examDate: dto.examDate,
@@ -345,6 +393,20 @@ export default {
         // console.error("获取考试列表失败：", error);
         // this.$message.error("获取考试列表失败");
       }
+    },
+    //当每页条数发生了变化，调用此函数
+    onSizeChange(size) {
+      this.pageSize = size;
+      this.fetchExams(this.userId);
+    },
+    //当前页码发生变化，调用此函数
+    onCurrentChange(num) {
+      this.pageNum = num;
+      this.fetchExams(this.userId);
+    },
+    resetAndLoadFruitList() {
+      this.examName = "";
+      this.fetchExams(this.userId);
     },
     async fetchExamDetails(examId, exam) {
       try {
@@ -442,7 +504,16 @@ export default {
       try {
         const response = await axios.put(
           "/teacher/updatePassword",
-          this.passwordForm,
+          {
+            id: this.userId,
+            oldPassword: this.passwordForm.oldPassword,
+            newPassword: this.passwordForm.newPassword,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
         if (response.data.code === 200) {
           this.$message.success("修改密码成功！");
@@ -450,19 +521,25 @@ export default {
           this.$message.error("修改密码失败");
         }
       } catch (error) {
-        // console.error("修改密码失败", error);
-        // this.$message.error("修改密码失败");
+        console.error("修改密码失败", error);
+        this.$message.error("修改密码失败");
       }
     },
     // 注销账号
     async deleteAccount() {
       console.log("deleteAccount:", this.deleteAccountForm);
       try {
-        const response = await axios.delete("/teacher/deleteAccount", {
-          data: this.deleteAccountForm,
-        });
+        const response = await axios.delete(
+          "/teacher/deleteAccount?id=" +
+            this.userId +
+            "&password=" +
+            this.deleteAccountForm.password,
+        );
         if (response.data.code === 200) {
           this.$message.success("注销账号成功！");
+
+          // 路由跳转到登录界面
+          this.$router.replace("/");
         } else {
           this.$message.error("注销账号失败");
         }
