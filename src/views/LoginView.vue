@@ -176,7 +176,7 @@ export default {
 </script>
 
 <style scoped>
-/* 保持原有样式不变 */
+/* 总容器样式 */
 .login-container {
   display: flex;
   justify-content: center;
