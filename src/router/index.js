@@ -4,7 +4,7 @@ import HomeView from "../views/HomeView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import AboutView from "../views/AboutView.vue";
 import CustomerView from "../views/CustomerView.vue";
-import TeacherView from "../views/TeacherView.vue";
+import AdminView from "../views/AdminView.vue";
 
 const routes = [
   { path: "/", name: "Login", component: LoginView },
@@ -23,11 +23,10 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: "/TeacherView",
-    name: "Teacher",
-    component: TeacherView,
+    path: "/AdminView",
+    name: "Admin",
+    component: AdminView,
     meta: { requiresAuth: true },
-
   },
 ];
 
@@ -39,9 +38,9 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem("token");
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next("/");
+    next("/"); // 如果没有登录，跳转到登录页
   } else {
-    next();
+    next(); // 放行
   }
 });
 

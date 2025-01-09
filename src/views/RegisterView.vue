@@ -87,7 +87,6 @@ export default {
     const registeredId = ref("");
     const registeredName = ref("");
 
-    // 表单验证规则
     const rules = {
       userType: [
         { required: true, message: "请选择用户类型", trigger: "change" },
@@ -113,6 +112,7 @@ export default {
         if (valid) {
           loading.value = true;
           try {
+            console.log("axios配置的baseURL:", axios.defaults.baseURL);
             const response = await axios.post(
               "/account/add",
               registerForm.value,

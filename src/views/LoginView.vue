@@ -58,6 +58,7 @@ export default {
     const loading = ref(false);
     const loginFormRef = ref(null);
 
+    // 添加教师状态相关的响应式变量
     const showStatusNotification = ref(false);
     const teacherStatus = ref("");
     const userName = ref("");
@@ -67,6 +68,7 @@ export default {
       password: [{ required: true, message: "请输入密码", trigger: "blur" }],
     };
 
+    // 添加通知关闭处理函数
     const handleNotificationClose = () => {
       showStatusNotification.value = false;
       if (teacherStatus.value === "REJECTED") {
