@@ -97,6 +97,11 @@
               prop="examDate"
               class="table-column"
             ></el-table-column>
+            <el-table-column
+              label="年级"
+              prop="grade"
+              class="table-column"
+            ></el-table-column>
             <el-table-column label="操作" width="200" class="table-column">
               <template #default="{ row }">
                 <el-button
@@ -122,7 +127,19 @@
                     class="exam-collapse-item"
                   >
                     <div><strong>学号：</strong>{{ detail.id }}</div>
-                    <div><strong>分数：</strong>{{ detail.score }}</div>
+                    <div>
+                      <strong>分数：</strong>
+                      <span v-if="detail.score">{{ detail.score }}</span>
+                      <span v-else>未批改</span>
+                    </div>
+                    <div>
+                      <el-button
+                        type="primary"
+                        size="mini"
+                        @click="scoreStudent(detail)"
+                        >打分</el-button
+                      >
+                    </div>
                   </el-collapse-item>
                 </el-collapse>
               </template>
@@ -135,9 +152,29 @@
             <el-table-column label="姓名" prop="name"></el-table-column>
             <el-table-column label="学号" prop="studentId"></el-table-column>
             <el-table-column label="年级" prop="grade"></el-table-column>
-            <el-table-column label="班级" prop="class"></el-table-column>
+            <el-table-column label="操作" width="200" class="table-column">
+              <template #default="{ row }">
+                <el-button
+                  @click="showSubjects(row)"
+                  size="mini"
+                  class="expand-button"
+                >
+                  {{ row.expanded ? "收起" : "选科" }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column label="选科">
+              <template #default="{ row }">
+                <div v-if="row.expanded" style="margin-top: 10px">
+                  <div v-for="subject in row.class" :key="subject">
+                    {{ subject }}
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
+
         <div v-if="currentPage === 'account-management'">
           <h2>账号信息管理</h2>
           <el-form :model="passwordForm" label-position="top">
@@ -200,6 +237,8 @@ export default {
       activeIndex: "home",
       currentPage: "home",
       breadcrumb: ["主页"],
+      selectedStudent: null,
+      dialogVisible: false,
       drawerVisible: false,
       selectedExam: null,
       exams: [],
@@ -209,13 +248,6 @@ export default {
         subjectId: "",
         startTime: "",
         grade: "",
-      },
-      // selectedExam: {},
-      newQuestion: {
-        type: "",
-        content: "",
-        options: [],
-        answer: "",
       },
       passwordForm: {
         oldPassword: "",
@@ -238,7 +270,7 @@ export default {
     this.userId = userId;
     this.fetchSubjects(userId);
     this.fetchExams(userId);
-    this.fetchStudents();
+    this.fetchStudents(userId);
   },
   methods: {
     // 创建考试
@@ -301,9 +333,10 @@ export default {
         // console.log("答复" + response.data);
         if (response.data.code === 200) {
           this.exams = response.data.data.map((dto) => ({
-            examId: dto.exam.examId,
-            subject: dto.exam.examName,
-            examDate: dto.exam.examDate,
+            examId: dto.examId,
+            subject: dto.examName,
+            examDate: dto.examDate,
+            grade: dto.grade,
             expanded: false,
             examDetails: [],
           }));
@@ -342,39 +375,67 @@ export default {
         this.fetchExamDetails(exam.examId, exam);
       }
     },
+    //打分
+    scoreStudent(detail) {
+      // 这里可以弹出一个输入框让用户输入分数
+      this.$prompt("请输入分数", "打分", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        inputPattern: /^[0-9]+$/,
+        inputErrorMessage: "分数必须是数字",
+      })
+        .then(async ({ value }) => {
+          // 更新分数
+          detail.score = value;
+          await axios.put(
+            "/teacher/scoreStudent?stuId=" +
+              detail.id +
+              "&score=" +
+              detail.score,
+          );
+          this.$message({
+            type: "success",
+            message: "打分成功",
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "取消打分",
+          });
+        });
+    },
     // 获取学生列表
-    async fetchStudents() {
+    async fetchStudents(userId) {
       try {
-        const response = await axios.get("/teacher/getAllStudents");
+        const response = await axios.get(
+          "/teacher/getAllStudents?userId=" + userId,
+        );
         if (response.data.code === 200) {
-          this.students = response.data.data;
+          this.students = response.data.data.map((dto) => ({
+            name: dto.name,
+            studentId: dto.studentId,
+            grade: dto.grade,
+            class: [],
+            expanded: false,
+          }));
         }
       } catch (error) {
-        // console.error("获取学生列表失败", error);
-        // this.$message.error("获取学生列表失败");
+        console.log("加载失败");
       }
     },
-
-    //查看考试详情
-    // async viewExamDetail(examId) {
-    //   console.log("viewExamDetail", examId);
-    //   try {
-    //     const response = await axios.post("/teacher/getExamDetail", {
-    //       id: examId,
-    //     });
-    //     if (response.data.code === 200) {
-    //       this.selectedExam = response.data.data;
-    //       this.selectedExam.subject = this.subjects.find(
-    //         (subject) => subject.id === this.selectedExam.subjectId,
-    //       )?.name;
-    //       this.currentPage = "exam-detail";
-    //       this.breadcrumb.push(this.selectedExam.name);
-    //     }
-    //   } catch (error) {
-    //     // console.error("获取考试详情失败:", error);
-    //     // this.$message.error("获取考试详情失败！");
-    //   }
-    // },
+    //查看选科
+    async showSubjects(student) {
+      student.expanded = !student.expanded;
+      console.log(student.expanded);
+      if (student.expanded && (!student.class || student.class.length === 0)) {
+        const response = await axios.get(
+          "/teacher/getSubjectByStuId?stuId=" + student.studentId,
+        );
+        student.class = response.data.data;
+        console.log(student.class);
+      }
+    },
     //修改密码
     async updatePassword() {
       console.log("updatePassword:", this.passwordForm);
